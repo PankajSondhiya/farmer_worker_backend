@@ -23,37 +23,35 @@ const createJob = async (req, res) => {
 async function updateJobById(req, res) {
   try {
     const job_id = req.params.job_id;
-    // Destructure worker response fields and "other" fields from req.body
-    const { workerId, responseText, ...otherFields } = req.body;
 
-    // Find the job by its id
+    const { workerResponse, ...otherFields } = req.body;
+
     const job = await Job.findById(job_id);
     if (!job) {
       return res.status(404).send({ message: "No job found with this ID" });
     }
 
-    // Update any other job fields provided in the request
     Object.keys(otherFields).forEach((field) => {
       job[field] = otherFields[field];
     });
-
-    // If workerId and responseText are provided, update/insert the worker response
-    if (workerId && responseText !== undefined) {
-      const index = job.workerResponses.findIndex(
-        (r) => r.workerId.toString() === workerId
-      );
-      if (index !== -1) {
-        // Update existing worker response
-        job.workerResponses[index].responseText = responseText;
-        job.workerResponses[index].updatedAt = new Date();
-      } else {
-        // Add a new worker response
-        job.workerResponses.push({
-          workerId,
-          responseText,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        });
+    if (workerResponse) {
+      const { workerId, responseText } = workerResponse;
+      if (workerId && responseText !== undefined) {
+        const index = job.workerResponses.findIndex(
+          (r) => r.workerId.toString() === workerId
+        );
+        if (index !== -1) {
+          job.workerResponses[index].responseText = responseText;
+          job.workerResponses[index].updatedAt = new Date();
+        } else {
+          // Add a new worker response
+          job.workerResponses.push({
+            workerId,
+            responseText,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          });
+        }
       }
     }
 
